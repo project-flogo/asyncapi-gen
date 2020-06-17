@@ -1,0 +1,38 @@
+{
+  "name": "asyncapi-gen",
+  "version": "0.1.0",
+  "author": "Project Flogo",
+  "description": "Flogo App template for the AsyncAPI Generator",
+  "license": "BSD-3-Clause",
+  "private": true,
+  "repository": {
+    "url": "https://github.com/project-flogo/asyncapi-gen"
+  },
+  "devDependencies": {
+    "prettier": "2.0.5"
+  },
+  "generator": {
+    "supportedProtocols": [
+      "http",
+      "https",
+      "ws",
+      "wss",
+      "kafka",
+      "kafka-secure",
+      "mqtt",
+      "stomp"
+    ],
+    "generator": "<2.0.0",
+    "parameters": {
+      "server": {
+        "description": "The server you want to use in the Flogo app. If not, all the servers that can be found in the document will be used.",
+        "required": false
+      },
+      "resourceType": {
+        "description": "The Flogo resource type to generate. Defaults to 'flow'.",
+        "default": "flow",
+        "required": false
+      }
+    }
+  }
+}
