@@ -4,16 +4,13 @@ const FLOGO_APP_MODEL = "1.1.0";
 
 const flogoGenerator = (asyncapi, resourceType, server) => {
   //if server passed in is not "", use it, else use all servers in the document
-  let servers = server
-    ? [server]
-    : Object.keys(asyncapi.servers());
+  let servers = server ? [server] : Object.keys(asyncapi.servers());
 
   const imports = [`github.com/project-flogo/${resourceType}`];
   const triggers = [];
   const resources = [];
 
   servers.forEach((eachServer) => {
-    console.log(eachServer);
     let currentProtocol = asyncapi.server(eachServer).protocol();
     const generateFlogo = getConverter(currentProtocol);
     const result = generateFlogo(asyncapi, eachServer, resourceType);
@@ -27,7 +24,9 @@ const flogoGenerator = (asyncapi, resourceType, server) => {
     type: "flogo:app",
     version: asyncapi.info().version(),
     appModel: FLOGO_APP_MODEL,
-    description: asyncapi.info().description().split(/\n/g)[0],
+    description: asyncapi.info().description()
+      ? asyncapi.info().description().split(/\n/g)[0]
+      : null,
     imports,
     triggers,
     resources,

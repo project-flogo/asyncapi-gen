@@ -11,7 +11,7 @@ module.exports = {
       if (generator.templateParams["resourceType"] === "stream") {
         resourceType = "stream";
       }
-      //if server entered as parameter use it, else set it as ""
+      //if server entered as parameter use it, else set it as null
       let serverFromParam = generator.templateParams["server"];
       server = serverFromParam ? serverFromParam : null;
     }

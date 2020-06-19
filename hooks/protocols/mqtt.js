@@ -1,11 +1,19 @@
-const { convertCurlyBracesToHashtag } = require("./utils.js");
+const {
+  replaceCurlyBracesWith,
+  substituteVariablesWithValues,
+  getValueFromVariable,
+} = require("./utils.js");
+
+const importUrl = "github.com/project-flogo/edge-contrib/trigger/mqtt";
+const splitImportUrl = importUrl.split("/");
+const ref = splitImportUrl[splitImportUrl.length - 1];
 
 const getHandlerArr = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName) => {
     const channel = asyncapi.channels()[channelName];
-    const topicName = convertCurlyBracesToHashtag(channelName);
+    const topicName = replaceCurlyBracesWith(channelName, "#");
     const resourceURI = `${resourceType}URI`;
-    //todo: determine the functions to structure the returned object
+
     return {
       settings: {
         topic: topicName,
@@ -19,50 +27,82 @@ const getHandlerArr = (asyncapi, resourceType) => {
               : channel.subscribe().id()
           }`,
         },
+        input: {
+          message: "=$.message",
+          topic: "=$.topic",
+          topicParams: "=$.topicParams",
+        },
+        output: {
+          data: "=$.data",
+        },
       },
     };
   });
 };
 
-const getResourcesArr = (asyncapi, resourceType) => {
+const getResources = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName, index) => {
     const channel = asyncapi.channels()[channelName];
     return {
       id: `${resourceType}:${
         channel.publish() ? channel.publish().id() : channel.subscribe().id()
       }`,
-      data: {},
+      data: {
+        metadata: {
+          input: [
+            {
+              name: "message",
+              type: "string",
+            },
+            {
+              name: "topic",
+              type: "string",
+            },
+            {
+              name: "topicParams",
+              type: "params",
+            },
+          ],
+          output: [
+            {
+              name: "data",
+              type: "object",
+            },
+          ],
+        },
+      },
     };
   });
 };
-//todo: determine the functions to structure the returned object
-const getHandlersFromServers = (asyncapi, serverName, resourceType) => {
+
+const getTriggers = (asyncapi, serverName, resourceType) => {
   const currServer = asyncapi.server(serverName);
   let brokerUrl = currServer.url();
-  let protocol = currServer.protocol();
+  let mqttBinding = currServer.bindings() ? currServer.binding("mqtt") : null;
   return [
     {
       id: serverName,
-      ref: `#${protocol}`,
+      ref: `#${ref}`,
       settings: {
-        broker: brokerUrl.replace(
-          "{port}",
-          currServer.variable("port").defaultValue()
+        broker: substituteVariablesWithValues(
+          brokerUrl,
+          currServer.variables()
         ),
-        id: "<SET THE CLIENT ID>",
+        id: mqttBinding && mqttBinding.clientId ? mqttBinding.clientId : null,
       },
-      handlers: getHandlerArr(asyncapi, resourceType, protocol),
+      handlers: getHandlerArr(asyncapi, resourceType),
     },
   ];
 };
+
 const getImports = () => {
-  return ["github.com/project-flogo/edge-contrib/trigger/mqtt"];
+  return [importUrl];
 };
 
 const generateJson = (asyncapi, serverName, resourceType) => {
   return {
-    triggers: getHandlersFromServers(asyncapi, serverName, resourceType),
-    resources: getResourcesArr(asyncapi, resourceType),
+    triggers: getTriggers(asyncapi, serverName, resourceType),
+    resources: getResources(asyncapi, resourceType),
     imports: getImports(),
   };
 };

@@ -1,14 +1,18 @@
-const { convertCurlyBracesToHashtag } = require("./utils.js");
+const { replaceCurlyBracesWith } = require("./utils.js");
+
+const importUrl = "github.com/jvanderl/flogo-components/trigger/stomp";
+const splitImportUrl = importUrl.split("/");
+const ref = splitImportUrl[splitImportUrl.length - 1];
 
 const getHandlerArr = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName) => {
     const channel = asyncapi.channels()[channelName];
-    const topicName = convertCurlyBracesToHashtag(channelName);
+    const topicName = replaceCurlyBracesWith(channelName, "#");
     const resourceURI = `${resourceType}URI`;
-    //todo: determine the functions to structure the returned object
+
     return {
       settings: {
-        topic: topicName,
+        source: channel.subscribe() ? topicName : null,
       },
       action: {
         ref: `#${resourceType}`,
@@ -19,47 +23,62 @@ const getHandlerArr = (asyncapi, resourceType) => {
               : channel.subscribe().id()
           }`,
         },
+        input: {
+          message: "=$.message",
+          originalSource: "=$.originalSource",
+        },
+        output: {},
       },
     };
   });
 };
 
-const getResourcesArr = (asyncapi, resourceType) => {
+const getResources = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName, index) => {
     const channel = asyncapi.channels()[channelName];
     return {
       id: `${resourceType}:${
         channel.publish() ? channel.publish().id() : channel.subscribe().id()
       }`,
-      data: {},
+      data: {
+        metadata: {
+          input: [
+            {
+              name: "message",
+              type: "any",
+            },
+            {
+              name: "originalSource",
+              type: "string",
+            },
+          ],
+          output: [],
+        },
+      },
     };
   });
 };
 
-//todo: determine the functions to structure the returned object
-const getHandlersFromServers = (asyncapi, serverName, resourceType) => {
-  const currServer = asyncapi.server(serverName);
-  let brokerUrl = currServer.url();
+const getTriggers = (asyncapi, serverName, resourceType) => {
   return [
     {
+      //todo
       id: serverName,
-      ref: `#${currServer.protocol()}`,
-      settings: {
-        address: currServer.variable("port").defaultValue(), //????
-      },
-      handlers: getHandlerArr(asyncapi, resourceType, currServer.protocol()),
+      ref: `#${ref}`,
+      settings: {},
+      handlers: getHandlerArr(asyncapi, resourceType),
     },
   ];
 };
 
 const getImports = () => {
-  return ["github.com/jvanderl/flogo-components/trigger/stomp"];
+  return [importUrl];
 };
 
 const generateJson = (asyncapi, serverName, resourceType) => {
   return {
-    triggers: getHandlersFromServers(asyncapi, serverName, resourceType),
-    resources: getResourcesArr(asyncapi, resourceType),
+    triggers: getTriggers(asyncapi, serverName, resourceType),
+    resources: getResources(asyncapi, resourceType),
     imports: getImports(),
   };
 };

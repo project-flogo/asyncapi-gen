@@ -17,10 +17,10 @@ npm install -g @asyncapi/generator
 
 ## Supported parameters
 
-| Name         | Description                                                                                                   | Required | Example      |
-| ------------ | ------------------------------------------------------------------------------------------------------------- | -------- | ------------ |
-| server       | The server you want to use in the Flogo app. If not specified defaults to the first server that can be found. | No       | `production` |
-| resourceType | The Flogo resource type to generate. Defaults to `flow`.                                                      | No       | `flow`       |
+| Name         | Description                                                                                                          | Required | Example      |
+| ------------ | -------------------------------------------------------------------------------------------------------------------- | -------- | ------------ |
+| server       | The server you want to use in the Flogo app. If not, all the servers that can be found in the document will be used. | No       | `production` |
+| resourceType | The Flogo resource type to generate. Defaults to `flow`.                                                             | No       | `flow`       |
 
 ## Supported protocols
 

@@ -1,12 +1,15 @@
-const { convertCurlyBracesToHashtag } = require("./utils.js");
+const { replaceCurlyBracesWith, getValueFromVariable } = require("./utils.js");
+
+const importUrl = "github.com/project-flogo/websocket/trigger/wsserver";
+const splitImportUrl = importUrl.split("/");
+const ref = splitImportUrl[splitImportUrl.length - 1];
 
 const getHandlerArr = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName) => {
     const channel = asyncapi.channels()[channelName];
-    const topicName = convertCurlyBracesToHashtag(channelName);
+    const topicName = replaceCurlyBracesWith(channelName, "#");
     const resourceURI = `${resourceType}URI`;
 
-    //todo: determine the functions to structure the returned object
     return {
       settings: {
         topic: topicName,
@@ -20,46 +23,81 @@ const getHandlerArr = (asyncapi, resourceType) => {
               : channel.subscribe().id()
           }`,
         },
+        input: {
+          pathparams: "=$.pathParams",
+          queryParams: "=$.queryParams",
+          headers: "=$.headers",
+          content: "=$.content",
+          wsconnection: "=$.wsconnection",
+        },
+        output: {},
       },
     };
   });
 };
 
-const getResourcesArr = (asyncapi, resourceType) => {
+const getResources = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName, index) => {
     const channel = asyncapi.channels()[channelName];
     return {
       id: `${resourceType}:${
         channel.publish() ? channel.publish().id() : channel.subscribe().id()
       }`,
-      data: {},
+      data: {
+        metadata: {
+          input: [
+            {
+              name: "pathParams",
+              type: "params",
+            },
+            {
+              name: "queryParams",
+              type: "params",
+            },
+            {
+              name: "headers",
+              type: "params",
+            },
+            {
+              name: "content",
+              type: "any",
+            },
+            {
+              name: "wsconnection",
+              type: "any",
+            },
+          ],
+          output: [],
+        },
+      },
     };
   });
 };
 
-const getHandlersFromServers = (asyncapi, serverName, resourceType) => {
+const getTriggers = (asyncapi, serverName, resourceType) => {
   const currServer = asyncapi.server(serverName);
   let brokerUrl = currServer.url();
-  let protocol = currServer.protocol();
-  //todo: determine the functions to structure the returned object
+
   return [
-    { //todo
+    {
       id: serverName,
-      ref: `#${protocol}`,
-      settings: {},
-      handlers: getHandlerArr(asyncapi, resourceType, protocol),
+      ref: `#${ref}`,
+      settings: {
+        port: getValueFromVariable(currServer.variables(), "port") || null,
+      },
+      handlers: getHandlerArr(asyncapi, resourceType),
     },
   ];
 };
 
 const getImports = () => {
-  return ["github.com/project-flogo/websocket/trigger/wsserver"];
+  return [importUrl];
 };
 
 const generateJson = (asyncapi, serverName, resourceType) => {
   return {
-    triggers: getHandlersFromServers(asyncapi, serverName, resourceType),
-    resources: getResourcesArr(asyncapi, resourceType),
+    triggers: getTriggers(asyncapi, serverName, resourceType),
+    resources: getResources(asyncapi, resourceType),
     imports: getImports(),
   };
 };

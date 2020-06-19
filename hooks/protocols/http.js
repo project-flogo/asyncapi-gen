@@ -1,70 +1,137 @@
-const { convertCurlyBracesToHashtag } = require("./utils.js");
+const { replaceCurlyBracesWith, getValueFromVariable } = require("./utils.js");
+
+const importUrl = "github.com/project-flogo/contrib/trigger/rest";
+const splitImportUrl = importUrl.split("/");
+const ref = splitImportUrl[splitImportUrl.length - 1];
 
 const getHandlerArr = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName) => {
     const channel = asyncapi.channels()[channelName];
-    const topicName = convertCurlyBracesToHashtag(channelName);
+    const pathValue = replaceCurlyBracesWith(channelName, ":");
     const resourceURI = `${resourceType}URI`;
-    //todo: determine the functions to structure the returned object
+
+    const channelMethod = channel.publish()
+      ? channel.publish()
+      : channel.subscribe();
+    const hasBindings = channelMethod.bindings() ? true : false;
+    let httpBinding = null;
+    if (hasBindings) {
+      httpBinding = channelMethod.binding("http") || null;
+    }
+
     return {
       settings: {
-        method: `<The method name>`,
-        path: channelName,
+        //check if http binding exists and has method value use it, else use POST or GET based on whether the channel method is publish or subscribe respectively
+        method:
+          httpBinding && httpBinding.method
+            ? httpBinding.method
+            : channel.publish()
+            ? "POST"
+            : "GET",
+        path: pathValue,
       },
       action: {
         ref: `#${resourceType}`,
         settings: {
-          [resourceURI]: `res://${resourceType}:${
-            channel.publish()
-              ? channel.publish().id()
-              : channel.subscribe().id()
-          }`,
+          [resourceURI]: `res://${resourceType}:${channelMethod.id()}`,
+        },
+        input: {
+          pathParams: "=$.pathParams",
+          queryParams: "=$.queryParams",
+          headers: "=$.headers",
+          method: "=$.method",
+          content: "=$.content",
+        },
+        output: {
+          code: "=$.code",
+          data: "=$.data",
+          headers: "=$.headers",
+          cookies: "=$.cookies",
         },
       },
     };
   });
 };
 
-const getResourcesArr = (asyncapi, resourceType) => {
+const getResources = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName, index) => {
     const channel = asyncapi.channels()[channelName];
     return {
       id: `${resourceType}:${
         channel.publish() ? channel.publish().id() : channel.subscribe().id()
       }`,
-      data: {},
+      data: {
+        metadata: {
+          input: [
+            {
+              name: "pathParams",
+              type: "params",
+            },
+            {
+              name: "queryParams",
+              type: "params",
+            },
+            {
+              name: "headers",
+              type: "params",
+            },
+            {
+              name: "method",
+              type: "string",
+            },
+            {
+              name: "content",
+              type: "any",
+            },
+          ],
+          output: [
+            {
+              name: "code",
+              type: "int",
+            },
+            {
+              name: "data",
+              type: "any",
+            },
+            {
+              name: "headers",
+              type: "params",
+            },
+            {
+              name: "cookies",
+              type: "array",
+            },
+          ],
+        },
+      },
     };
   });
 };
 
-//todo: determine the functions to structure the returned object
-const getHandlersFromServers = (asyncapi, serverName, resourceType) => {
+const getTriggers = (asyncapi, serverName, resourceType) => {
   const currServer = asyncapi.server(serverName);
   let brokerUrl = currServer.url();
-  let protocol = currServer.protocol();
+
   return [
     {
       id: serverName,
-      ref: `#${protocol}`,
+      ref: `#${ref}`,
       settings: {
-        port: brokerUrl.replace(
-          "{port}",
-          currServer.variable("port").defaultValue()
-        ),
+        port: getValueFromVariable(currServer.variables(), "port") || null,
       },
-      handlers: getHandlerArr(asyncapi, resourceType, protocol),
+      handlers: getHandlerArr(asyncapi, resourceType),
     },
   ];
 };
 
 const getImports = () => {
-  return ["github.com/project-flogo/contrib/trigger/rest"];
+  return [importUrl];
 };
 
 const generateJson = (asyncapi, serverName, resourceType) => {
   return {
-    triggers: getHandlersFromServers(asyncapi, serverName, resourceType),
-    resources: getResourcesArr(asyncapi, resourceType),
+    triggers: getTriggers(asyncapi, serverName, resourceType),
+    resources: getResources(asyncapi, resourceType),
     imports: getImports(),
   };
 };
