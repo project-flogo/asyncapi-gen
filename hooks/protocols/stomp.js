@@ -1,8 +1,7 @@
-const { replaceCurlyBracesWith } = require("./utils.js");
+const { replaceCurlyBracesWith, getRefFromImportUrl } = require("./utils.js");
 
 const importUrl = "github.com/jvanderl/flogo-components/trigger/stomp";
-const splitImportUrl = importUrl.split("/");
-const ref = splitImportUrl[splitImportUrl.length - 1];
+const ref = getRefFromImportUrl(importUrl);
 
 const getHandlerArr = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName) => {
@@ -27,7 +26,6 @@ const getHandlerArr = (asyncapi, resourceType) => {
           message: "=$.message",
           originalSource: "=$.originalSource",
         },
-        output: {},
       },
     };
   });
@@ -52,7 +50,6 @@ const getResources = (asyncapi, resourceType) => {
               type: "string",
             },
           ],
-          output: [],
         },
       },
     };
@@ -65,7 +62,6 @@ const getTriggers = (asyncapi, serverName, resourceType) => {
       //todo
       id: serverName,
       ref: `#${ref}`,
-      settings: {},
       handlers: getHandlerArr(asyncapi, resourceType),
     },
   ];

@@ -1,11 +1,11 @@
 const {
   replaceCurlyBracesWith,
   substituteVariablesWithValues,
+  getRefFromImportUrl,
 } = require("./utils.js");
 
 const importUrl = "github.com/project-flogo/contrib/trigger/kafka";
-const splitImportUrl = importUrl.split("/");
-const ref = splitImportUrl[splitImportUrl.length - 1];
+const ref = getRefFromImportUrl(importUrl);
 
 const getHandlerArr = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName) => {
@@ -29,7 +29,6 @@ const getHandlerArr = (asyncapi, resourceType) => {
         input: {
           message: "=$.message",
         },
-        output: {},
       },
     };
   });
@@ -50,7 +49,6 @@ const getResources = (asyncapi, resourceType) => {
               type: "string",
             },
           ],
-          output: [],
         },
       },
     };

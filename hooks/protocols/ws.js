@@ -1,8 +1,11 @@
-const { replaceCurlyBracesWith, getValueFromVariable } = require("./utils.js");
+const {
+  replaceCurlyBracesWith,
+  getValueFromVariable,
+  getRefFromImportUrl,
+} = require("./utils.js");
 
 const importUrl = "github.com/project-flogo/websocket/trigger/wsserver";
-const splitImportUrl = importUrl.split("/");
-const ref = splitImportUrl[splitImportUrl.length - 1];
+const ref = getRefFromImportUrl(importUrl);
 
 const getHandlerArr = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName) => {
@@ -30,7 +33,6 @@ const getHandlerArr = (asyncapi, resourceType) => {
           content: "=$.content",
           wsconnection: "=$.wsconnection",
         },
-        output: {},
       },
     };
   });
@@ -67,7 +69,6 @@ const getResources = (asyncapi, resourceType) => {
               type: "any",
             },
           ],
-          output: [],
         },
       },
     };

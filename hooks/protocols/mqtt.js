@@ -2,11 +2,11 @@ const {
   replaceCurlyBracesWith,
   substituteVariablesWithValues,
   getValueFromVariable,
+  getRefFromImportUrl,
 } = require("./utils.js");
 
 const importUrl = "github.com/project-flogo/edge-contrib/trigger/mqtt";
-const splitImportUrl = importUrl.split("/");
-const ref = splitImportUrl[splitImportUrl.length - 1];
+const ref = getRefFromImportUrl(importUrl);
 
 const getHandlerArr = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName) => {

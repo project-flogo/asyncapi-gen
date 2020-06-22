@@ -1,8 +1,10 @@
-const { replaceCurlyBracesWith, getValueFromVariable } = require("./utils.js");
-
+const {
+  replaceCurlyBracesWith,
+  getValueFromVariable,
+  getRefFromImportUrl,
+} = require("./utils.js");
 const importUrl = "github.com/project-flogo/contrib/trigger/rest";
-const splitImportUrl = importUrl.split("/");
-const ref = splitImportUrl[splitImportUrl.length - 1];
+const ref = getRefFromImportUrl(importUrl);
 
 const getHandlerArr = (asyncapi, resourceType) => {
   return asyncapi.channelNames().map((channelName) => {

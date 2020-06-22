@@ -19,6 +19,11 @@ const replaceCurlyBracesWith = (path, replacement) => {
   }, "");
 };
 
+const getRefFromImportUrl = (importUrl) => {
+  const splitImportUrl = importUrl.split("/");
+  return splitImportUrl[splitImportUrl.length - 1];
+};
+
 const getVariablesArray = (url) => {
   let result = [],
     array;
@@ -61,4 +66,5 @@ module.exports = {
   replaceCurlyBracesWith,
   substituteVariablesWithValues,
   getValueFromVariable,
+  getRefFromImportUrl,
 };
